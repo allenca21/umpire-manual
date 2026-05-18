@@ -1,0 +1,42 @@
+UMPIRE'S MANUAL — Get it on your phone
+========================================
+
+A 3-minute setup. Works offline at the field once saved.
+
+OPEN THIS LINK IN YOUR BROWSER:
+https://YOUR-URL-HERE.netlify.app    ← replace with the real URL
+
+
+iPhone (Safari)
+---------------
+1. Open Safari and go to the link above.
+2. Tap the Share button at the bottom of the screen
+   (square with an up-arrow).
+3. Scroll down and tap "Add to Home Screen".
+4. Tap "Add" in the top-right corner.
+5. Tap the new Umpire Manual icon on your home screen.
+6. On the prompt, tap "Download (~17 MB)" so it works offline.
+   Wait a few seconds for it to finish.
+
+
+Android (Chrome)
+----------------
+1. Open Chrome and go to the link above.
+2. You may see an "Install" banner — tap it.
+   If not, tap the menu (3 dots, top-right).
+3. Tap "Install app" or "Add to Home Screen".
+4. Tap "Install" to confirm.
+5. Tap the new Umpire Manual icon on your home screen.
+6. On the prompt, tap "Download (~17 MB)" so it works offline.
+   Wait a few seconds for it to finish.
+
+
+Once installed:
+- Tap the icon any time — no Wi-Fi needed after Step 6.
+- Use the menu (three lines, top-left) for Table of Contents,
+  Search, and Bookmarks.
+- Tap the "A" in the header to make the text bigger.
+- Tap the bookmark icon next to the page number to save a page.
+- Swipe left/right to flip pages; tap the page number to jump.
+
+Questions? Contact your crew chief.

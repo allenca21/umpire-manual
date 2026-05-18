@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Umpire Manual">
+<meta name="theme-color" content="#0b2545" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1320" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<title>Umpire's Manual · 2026</title>
+<style>
+:root {
+  --bg: #f5f3ee;
+  --bg-elev: #ffffff;
+  --bg-page: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #5a5a5a;
+  --ink-faint: #9a9a9a;
+  --rule: #e3e0d8;
+  --rule-strong: #c8c4b8;
+  --navy: #0b2545;
+  --navy-soft: #1d3557;
+  --accent: #c1272d; /* baseball red */
+  --accent-soft: rgba(193, 39, 45, 0.1);
+  --shadow: 0 4px 24px rgba(11, 37, 69, 0.08);
+  --shadow-lg: 0 12px 48px rgba(11, 37, 69, 0.16);
+  --header-h: 56px;
+  --page-zoom: 1.15; /* default page zoom — makes words bigger on first open */
+  --ui-scale: 1; /* user-adjustable: 1, 1.15, 1.3 */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --font-display: 'Iowan Old Style', 'Charter', 'Georgia', 'Times New Roman', serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', 'Menlo', 'Monaco', monospace;
+}
+[data-theme="dark"] {
+  --bg: #0b1320;
+  --bg-elev: #131e30;
+  --bg-page: #f5f3ee; /* keep page background light for readability of diagrams */
+  --ink: #e8e6e0;
+  --ink-soft: #9aa3b2;
+  --ink-faint: #5a6478;
+  --rule: #1f2a3d;
+  --rule-strong: #2a3854;
+  --navy: #0b2545;
+  --navy-soft: #1a2a45;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.5);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%;
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+
+/* ===== Header ===== */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: calc(var(--header-h) + var(--safe-top));
+  padding-top: var(--safe-top);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+.header__btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.header__btn:active { background: rgba(255,255,255,0.1); }
+.header__btn svg { width: 22px; height: 22px; }
+.header__title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: calc(17px * var(--ui-scale));
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 0;
+  padding: 0 4px;
+}
+.header__title small {
+  font-family: var(--font-body);
+  font-size: calc(11px * var(--ui-scale));
+  opacity: 0.7;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ===== Page Viewer ===== */
+.viewer {
+  position: absolute;
+  top: calc(var(--header-h) + var(--safe-top));
+  left: 0; right: 0; bottom: 0;
+  padding-bottom: var(--safe-bottom);
+  overflow: hidden;
+  background: var(--bg);
+  touch-action: pan-x pan-y;
+}
+.pages-track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+.pages-track.dragging { transition: none; }
+.page-card {
+  flex: 0 0 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 6px calc(80px + var(--safe-bottom)) 6px;
+  overflow: hidden;
+}
+.page-card__inner {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-page);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: relative;
+  touch-action: pinch-zoom;
+}
+.page-card__img-wrap {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.page-card__img {
+  width: calc(100% * var(--page-zoom));
+  height: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  margin: 0 auto;
+}
+.page-card__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--ink-faint);
+  gap: 16px;
+  background: var(--bg-page);
+}
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--rule);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== Footer ===== */
+.footer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 16px calc(12px + var(--safe-bottom)) 16px;
+  padding-left: calc(16px + var(--safe-left));
+  padding-right: calc(16px + var(--safe-right));
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 50;
+  pointer-events: none;
+}
+.footer > * { pointer-events: auto; }
+.page-jump {
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: calc(14px * var(--ui-scale));
+  color: var(--ink);
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+}
+.page-jump input {
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 36px;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-size: calc(15px * var(--ui-scale));
+}
+.page-jump span { color: var(--ink-soft); }
+.nav-btn {
+  width: 44px; height: 44px;
+  background: var(--bg-elev);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+.nav-btn:active { transform: scale(0.94); }
+.nav-btn:disabled { opacity: 0.3; }
+.nav-btn svg { width: 22px; height: 22px; }
+
+/* ===== Drawer ===== */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 37, 69, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s;
+  z-index: 200;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.scrim.open { opacity: 1; pointer-events: auto; }
+
+.drawer {
+  position: fixed;
+  top: 0; left: 0;
+  height: 100%;
+  width: min(86%, 360px);
+  background: var(--bg-elev);
+  z-index: 300;
+  transform: translateX(-100%);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.drawer.open { transform: translateX(0); }
+.drawer__header {
+  padding: calc(16px + var(--safe-top)) 20px 16px calc(20px + var(--safe-left));
+  background: var(--navy);
+  color: #fff;
+}
+.drawer__header h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.drawer__header .edition {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+.drawer__tabs {
+  display: flex;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--rule);
+}
+.drawer__tab {
+  flex: 1;
+  padding: 14px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+  position: relative;
+  text-transform: uppercase;
+}
+.drawer__tab.active {
+  color: var(--ink);
+}
+.drawer__tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 20%; right: 20%;
+  height: 2px;
+  background: var(--accent);
+}
+.drawer__content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(20px + var(--safe-bottom));
+  padding-left: var(--safe-left);
+}
+
+/* TOC */
+.toc-section {
+  border-bottom: 1px solid var(--rule);
+}
+.toc-section__head {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  width: 100%;
+  text-align: left;
+  gap: 10px;
+}
+.toc-section__head:active { background: var(--rule); }
+.toc-section__num {
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--ui-scale));
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+  min-width: 60px;
+}
+.toc-section__meta {
+  flex: 1;
+  min-width: 0;
+}
+.toc-section__title {
+  font-family: var(--font-display);
+  font-size: calc(16px * var(--ui-scale));
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.toc-section__pages {
+  font-size: calc(12px * var(--ui-scale));
+  color: var(--ink-faint);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.toc-section__caret {
+  width: 18px; height: 18px;
+  color: var(--ink-faint);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.toc-section.expanded .toc-section__caret { transform: rotate(90deg); }
+.toc-section__children {
+  display: none;
+  background: var(--bg);
+  border-top: 1px solid var(--rule);
+}
+.toc-section.expanded .toc-section__children { display: block; }
+.toc-child {
+  display: block;
+  padding: 14px 64px 14px 88px;
+  font-size: calc(14px * var(--ui-scale));
+  color: var(--ink-soft);
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  line-height: 1.35;
+  position: relative;
+}
+.toc-child:last-child { border-bottom: none; }
+.toc-child:active { background: var(--rule); }
+.toc-child__page {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  font-size: calc(11px * var(--ui-scale));
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  background: var(--bg-elev);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+}
+
+/* Search */
+.search-box {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.search-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg);
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  font-size: calc(16px * var(--ui-scale));
+  outline: none;
+  transition: border-color 0.15s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-meta {
+  font-size: calc(12px * var(--ui-scale));
+  color: var(--ink-faint);
+  margin-top: 10px;
+  letter-spacing: 0.02em;
+}
+.search-results {
+  padding: 0;
+}
+.search-result {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.search-result:active { background: var(--rule); }
+.search-result__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  gap: 12px;
+}
+.search-result__section {
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--ui-scale));
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.search-result__page {
+  font-size: calc(11px * var(--ui-scale));
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+.search-result__snippet {
+  font-size: calc(14px * var(--ui-scale));
+  color: var(--ink);
+  line-height: 1.45;
+}
+.search-result__snippet mark {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.empty svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.4; }
+
+/* Offline status footer inside the TOC drawer */
+.drawer-offline-status {
+  padding: 16px 20px;
+  margin-top: 8px;
+  border-top: 1px solid var(--rule);
+  background: var(--bg);
+}
+.drawer-offline-status__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(13px * var(--ui-scale));
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.drawer-offline-status__row svg { width: 18px; height: 18px; color: var(--accent); flex-shrink: 0; }
+.drawer-offline-status__btn {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: calc(13px * var(--ui-scale));
+  font-weight: 600;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+  cursor: pointer;
+}
+.drawer-offline-status__btn--primary {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+.drawer-offline-status__btn:active { transform: scale(0.98); }
+
+/* Offline-download banner */
+.offline-banner {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  left: 12px;
+  right: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--rule-strong);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 60;
+  transform: translateY(calc(100% + 100px));
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  max-width: 560px;
+  margin: 0 auto;
+}
+.offline-banner.show { transform: translateY(0); }
+.offline-banner__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.offline-banner__icon {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.offline-banner__icon svg { width: 20px; height: 20px; }
+.offline-banner__text { flex: 1; min-width: 0; }
+.offline-banner__title {
+  font-family: var(--font-display);
+  font-size: calc(15px * var(--ui-scale));
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.offline-banner__sub {
+  font-size: calc(12px * var(--ui-scale));
+  color: var(--ink-soft);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+.offline-banner__actions {
+  display: flex;
+  gap: 8px;
+}
+.offline-banner__btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: calc(14px * var(--ui-scale));
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  border: 1px solid var(--rule-strong);
+  background: var(--bg);
+  color: var(--ink-soft);
+}
+.offline-banner__btn--primary {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+.offline-banner__btn:active { transform: scale(0.97); }
+.offline-banner__progress {
+  margin-top: 12px;
+  display: none;
+}
+.offline-banner.downloading .offline-banner__progress { display: block; }
+.offline-banner.downloading .offline-banner__actions { display: none; }
+.progress-bar {
+  height: 6px;
+  background: var(--rule);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-bar__fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 0.2s;
+}
+.progress-text {
+  font-size: calc(12px * var(--ui-scale));
+  color: var(--ink-soft);
+  margin-top: 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Bookmark button — in the footer next to nav buttons */
+.nav-btn.bookmark.active { color: var(--accent); }
+.nav-btn.bookmark.active svg { fill: var(--accent); }
+
+/* Splash */
+.splash {
+  position: fixed;
+  inset: 0;
+  background: var(--navy);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.4s;
+}
+.splash.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.splash__logo {
+  width: 80px; height: 80px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  position: relative;
+}
+.splash__logo::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+}
+.splash__logo svg { width: 44px; height: 44px; }
+.splash h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin-bottom: 6px;
+}
+.splash p {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: calc(80px + var(--safe-bottom));
+  left: 50%;
+  transform: translate(-50%, 20px);
+  background: var(--navy);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: all 0.2s;
+  z-index: 400;
+  pointer-events: none;
+  box-shadow: var(--shadow-lg);
+}
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (min-width: 700px) {
+  .page-card { padding: 24px 24px calc(80px + var(--safe-bottom)) 24px; }
+  .page-card__inner { max-width: 800px; margin: 0 auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- Splash -->
+<div class="splash" id="splash">
+  <div class="splash__logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M5.5 7.5 Q12 12 18.5 7.5"/>
+      <path d="M5.5 16.5 Q12 12 18.5 16.5"/>
+    </svg>
+  </div>
+  <h1>Umpire's Manual</h1>
+  <p>2026 Edition</p>
+</div>
+
+<!-- Header -->
+<header class="header">
+  <button class="header__btn" id="btn-menu" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="3" y1="7" x2="21" y2="7"/>
+      <line x1="3" y1="12" x2="21" y2="12"/>
+      <line x1="3" y1="17" x2="21" y2="17"/>
+    </svg>
+  </button>
+  <div class="header__title">
+    <span id="header-title">Umpire's Manual</span>
+    <small id="header-subtitle">2026 Edition</small>
+  </div>
+  <button class="header__btn" id="btn-size" aria-label="Text size">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19h4l2-6m0 0L13 5l3 8m-6 0h6m0 0l2 6h4"/>
+    </svg>
+  </button>
+  <button class="header__btn" id="btn-theme" aria-label="Toggle theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="theme-icon">
+      <circle cx="12" cy="12" r="4"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+    </svg>
+  </button>
+</header>
+
+<!-- Viewer -->
+<main class="viewer" id="viewer">
+  <div class="pages-track" id="pages-track">
+    <!-- pages injected here -->
+  </div>
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <button class="nav-btn" id="btn-prev" aria-label="Previous page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </button>
+  <div class="page-jump">
+    <input type="tel" inputmode="numeric" pattern="[0-9]*" id="page-input" maxlength="3">
+    <span>/&nbsp;<span id="page-total">175</span></span>
+  </div>
+  <button class="nav-btn" id="btn-next" aria-label="Next page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  </button>
+  <button class="nav-btn bookmark" id="btn-bookmark" aria-label="Bookmark">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+    </svg>
+  </button>
+</footer>
+
+<!-- Scrim -->
+<div class="scrim" id="scrim"></div>
+
+<!-- Drawer -->
+<aside class="drawer" id="drawer">
+  <div class="drawer__header">
+    <h1>Umpire's Manual</h1>
+    <div class="edition">2026 Edition · Little League®</div>
+  </div>
+  <div class="drawer__tabs">
+    <button class="drawer__tab active" data-tab="toc">Contents</button>
+    <button class="drawer__tab" data-tab="search">Search</button>
+    <button class="drawer__tab" data-tab="bookmarks">Bookmarks</button>
+  </div>
+  <div class="drawer__content" id="drawer-content">
+    <!-- populated by JS -->
+  </div>
+</aside>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Offline download banner -->
+<div class="offline-banner" id="offline-banner">
+  <div class="offline-banner__head">
+    <div class="offline-banner__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+    </div>
+    <div class="offline-banner__text">
+      <div class="offline-banner__title">Save for offline use</div>
+      <div class="offline-banner__sub">Download all 175 pages now so the manual works without Wi-Fi at the field.</div>
+    </div>
+  </div>
+  <div class="offline-banner__actions">
+    <button class="offline-banner__btn" id="btn-offline-later">Later</button>
+    <button class="offline-banner__btn offline-banner__btn--primary" id="btn-offline-download">Download (~17 MB)</button>
+  </div>
+  <div class="offline-banner__progress">
+    <div class="progress-bar"><div class="progress-bar__fill" id="progress-fill"></div></div>
+    <div class="progress-text" id="progress-text">Preparing…</div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function() {
+'use strict';
+
+const D = window.MANUAL_DATA;
+const $ = (s) => document.querySelector(s);
+
+// === State ===
+// 4 size presets: Normal/Large/X-Large/XX-Large. Page zoom and UI scale move together.
+const SIZE_STEPS = [
+  { ui: 1.0,  zoom: 1.0,  label: 'Normal'   },
+  { ui: 1.15, zoom: 1.2,  label: 'Large'    },
+  { ui: 1.3,  zoom: 1.5,  label: 'X-Large'  },
+  { ui: 1.45, zoom: 1.85, label: 'XX-Large' },
+];
+const state = {
+  page: parseInt(localStorage.getItem('um.page')) || 1,
+  theme: localStorage.getItem('um.theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  bookmarks: JSON.parse(localStorage.getItem('um.bookmarks') || '[]'),
+  sizeIdx: parseInt(localStorage.getItem('um.sizeIdx') ?? '1'), // default Medium
+  tab: 'toc',
+  expandedSections: JSON.parse(localStorage.getItem('um.expanded') || '[]'),
+};
+
+// Navigable pages — skips blank divider pages
+const NAV_PAGES = D.navPages || Array.from({length: D.totalPages}, (_, i) => i + 1);
+const BLANK_SET = new Set(D.blankPages || []);
+
+function save() {
+  localStorage.setItem('um.page', state.page);
+  localStorage.setItem('um.theme', state.theme);
+  localStorage.setItem('um.bookmarks', JSON.stringify(state.bookmarks));
+  localStorage.setItem('um.expanded', JSON.stringify(state.expandedSections));
+  localStorage.setItem('um.sizeIdx', state.sizeIdx);
+}
+
+// === Theme & Size ===
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', state.theme);
+  const icon = $('#theme-icon');
+  if (state.theme === 'dark') {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  } else {
+    icon.innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>';
+  }
+}
+function applyScale() {
+  const s = SIZE_STEPS[state.sizeIdx];
+  document.documentElement.style.setProperty('--ui-scale', s.ui);
+  document.documentElement.style.setProperty('--page-zoom', s.zoom);
+}
+
+// Find the nearest navigable page (skips blank pages)
+function nextNav(from, dir) {
+  // Find current position in NAV_PAGES
+  let i = NAV_PAGES.indexOf(from);
+  if (i === -1) {
+    // 'from' is a blank page — find closest navigable in the direction
+    for (let j = 0; j < NAV_PAGES.length; j++) {
+      if (dir > 0 && NAV_PAGES[j] > from) return NAV_PAGES[j];
+      if (dir < 0 && NAV_PAGES[j] >= from) return NAV_PAGES[Math.max(0, j - 1)];
+    }
+    return dir > 0 ? NAV_PAGES[NAV_PAGES.length - 1] : NAV_PAGES[0];
+  }
+  const target = i + dir;
+  if (target < 0) return NAV_PAGES[0];
+  if (target >= NAV_PAGES.length) return NAV_PAGES[NAV_PAGES.length - 1];
+  return NAV_PAGES[target];
+}
+
+// === Page navigation ===
+const track = $('#pages-track');
+let renderedRange = { pages: [] }; // pages currently in DOM
+
+function renderWindow() {
+  // Render current page ± 2 NAVIGABLE pages for swipe smoothness (skipping blanks)
+  const curIdx = NAV_PAGES.indexOf(state.page);
+  const fallbackIdx = curIdx === -1 ? 0 : curIdx;
+  const loIdx = Math.max(0, fallbackIdx - 2);
+  const hiIdx = Math.min(NAV_PAGES.length - 1, fallbackIdx + 2);
+  const visiblePages = NAV_PAGES.slice(loIdx, hiIdx + 1);
+  
+  track.innerHTML = '';
+  for (const i of visiblePages) {
+    const card = document.createElement('div');
+    card.className = 'page-card';
+    card.dataset.page = i;
+    const inner = document.createElement('div');
+    inner.className = 'page-card__inner';
+    const wrap = document.createElement('div');
+    wrap.className = 'page-card__img-wrap';
+    const img = document.createElement('img');
+    img.className = 'page-card__img';
+    img.src = `pages/p-${String(i).padStart(3, '0')}.jpg`;
+    img.alt = `Page ${i}`;
+    img.loading = 'lazy';
+    img.draggable = false;
+    wrap.appendChild(img);
+    inner.appendChild(wrap);
+    card.appendChild(inner);
+    track.appendChild(card);
+  }
+  renderedRange = { pages: visiblePages };
+  
+  // Position track so the current page is centered
+  const offset = visiblePages.indexOf(state.page);
+  track.style.transition = 'none';
+  track.style.transform = `translateX(-${Math.max(0, offset) * 100}%)`;
+  void track.offsetWidth;
+  track.style.transition = '';
+}
+
+function setPage(p, smooth = true) {
+  // If p is blank, redirect to nearest navigable
+  if (BLANK_SET.has(p)) {
+    p = nextNav(p, p > state.page ? 1 : -1);
+  }
+  p = Math.max(1, Math.min(D.totalPages, p));
+  if (p === state.page && renderedRange.pages && renderedRange.pages.includes(p)) return;
+  
+  const oldPage = state.page;
+  state.page = p;
+  
+  // If we have the target page in DOM, animate to it
+  if (smooth && renderedRange.pages && renderedRange.pages.includes(p)) {
+    const oldIdx = renderedRange.pages.indexOf(oldPage);
+    const newIdx = renderedRange.pages.indexOf(p);
+    if (Math.abs(newIdx - oldIdx) === 1) {
+      track.style.transform = `translateX(-${newIdx * 100}%)`;
+      setTimeout(() => {
+        // Re-render window if we're near edges of rendered range
+        if (newIdx <= 1 || newIdx >= renderedRange.pages.length - 2) {
+          renderWindow();
+        }
+        updateUI();
+      }, 280);
+    } else {
+      renderWindow();
+      updateUI();
+    }
+  } else {
+    renderWindow();
+    updateUI();
+  }
+  save();
+}
+
+function updateUI() {
+  $('#page-input').value = state.page;
+  const navIdx = NAV_PAGES.indexOf(state.page);
+  $('#btn-prev').disabled = navIdx <= 0;
+  $('#btn-next').disabled = navIdx === -1 || navIdx >= NAV_PAGES.length - 1;
+  const isBookmarked = state.bookmarks.includes(state.page);
+  $('#btn-bookmark').classList.toggle('active', isBookmarked);
+  const section = D.toc.find(s => state.page >= s.start && state.page <= s.end);
+  if (section) {
+    $('#header-title').textContent = section.title;
+    $('#header-subtitle').textContent = section.subtitle;
+  }
+}
+
+// === Swipe handling ===
+let touch = null;
+const viewer = $('#viewer');
+
+viewer.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) return;
+  // When zoomed in (>1), let the page image scroll horizontally instead of swiping
+  const zoom = SIZE_STEPS[state.sizeIdx].zoom;
+  if (zoom > 1.01) { touch = null; return; }
+  touch = {
+    startX: e.touches[0].clientX,
+    startY: e.touches[0].clientY,
+    dx: 0, dy: 0,
+    locked: null, // 'h', 'v', or null
+    startTime: Date.now(),
+  };
+}, { passive: true });
+
+viewer.addEventListener('touchmove', (e) => {
+  if (!touch || e.touches.length !== 1) return;
+  touch.dx = e.touches[0].clientX - touch.startX;
+  touch.dy = e.touches[0].clientY - touch.startY;
+  if (touch.locked === null && (Math.abs(touch.dx) > 8 || Math.abs(touch.dy) > 8)) {
+    touch.locked = Math.abs(touch.dx) > Math.abs(touch.dy) ? 'h' : 'v';
+    if (touch.locked === 'h') track.classList.add('dragging');
+  }
+  if (touch.locked === 'h') {
+    e.preventDefault();
+    const w = viewer.clientWidth;
+    const baseIdx = renderedRange.pages.indexOf(state.page);
+    const baseOffset = Math.max(0, baseIdx) * 100;
+    const dragPct = (touch.dx / w) * 100;
+    // Resistance at edges
+    let pct = baseOffset - dragPct;
+    const navIdx = NAV_PAGES.indexOf(state.page);
+    if ((navIdx === 0 && touch.dx > 0) || (navIdx === NAV_PAGES.length - 1 && touch.dx < 0)) {
+      pct = baseOffset - dragPct * 0.3;
+    }
+    track.style.transform = `translateX(-${pct}%)`;
+  }
+}, { passive: false });
+
+viewer.addEventListener('touchend', () => {
+  if (!touch) return;
+  track.classList.remove('dragging');
+  if (touch.locked === 'h') {
+    const w = viewer.clientWidth;
+    const dt = Date.now() - touch.startTime;
+    const velocity = Math.abs(touch.dx) / dt;
+    const threshold = w * 0.3;
+    if (touch.dx < -threshold || (touch.dx < -40 && velocity > 0.5)) {
+      setPage(nextNav(state.page, 1));
+    } else if (touch.dx > threshold || (touch.dx > 40 && velocity > 0.5)) {
+      setPage(nextNav(state.page, -1));
+    } else {
+      // Snap back
+      const offset = renderedRange.pages.indexOf(state.page);
+      track.style.transform = `translateX(-${Math.max(0, offset) * 100}%)`;
+    }
+  }
+  touch = null;
+});
+
+// === Buttons ===
+$('#btn-prev').addEventListener('click', () => setPage(nextNav(state.page, -1)));
+$('#btn-next').addEventListener('click', () => setPage(nextNav(state.page, 1)));
+$('#btn-theme').addEventListener('click', () => {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  applyTheme();
+  save();
+});
+$('#btn-size').addEventListener('click', () => {
+  state.sizeIdx = (state.sizeIdx + 1) % SIZE_STEPS.length;
+  applyScale();
+  save();
+  showToast(`Text size: ${SIZE_STEPS[state.sizeIdx].label}`);
+});
+$('#btn-bookmark').addEventListener('click', () => {
+  const i = state.bookmarks.indexOf(state.page);
+  if (i >= 0) {
+    state.bookmarks.splice(i, 1);
+    showToast('Bookmark removed');
+  } else {
+    state.bookmarks.push(state.page);
+    state.bookmarks.sort((a, b) => a - b);
+    showToast('Page bookmarked');
+  }
+  save();
+  updateUI();
+  if (state.tab === 'bookmarks') renderTab();
+});
+
+// Page jump input
+const pageInput = $('#page-input');
+pageInput.addEventListener('focus', () => pageInput.select());
+pageInput.addEventListener('change', () => {
+  const n = parseInt(pageInput.value);
+  if (!isNaN(n)) setPage(n);
+  else pageInput.value = state.page;
+  pageInput.blur();
+});
+pageInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') pageInput.blur();
+});
+
+// Keyboard
+window.addEventListener('keydown', (e) => {
+  if (document.activeElement.tagName === 'INPUT') return;
+  if (e.key === 'ArrowLeft') setPage(nextNav(state.page, -1));
+  if (e.key === 'ArrowRight') setPage(nextNav(state.page, 1));
+  if (e.key === 'Escape') closeDrawer();
+});
+
+// === Drawer ===
+const drawer = $('#drawer');
+const scrim = $('#scrim');
+function openDrawer() {
+  drawer.classList.add('open');
+  scrim.classList.add('open');
+}
+function closeDrawer() {
+  drawer.classList.remove('open');
+  scrim.classList.remove('open');
+}
+$('#btn-menu').addEventListener('click', openDrawer);
+scrim.addEventListener('click', closeDrawer);
+
+// Drawer tabs
+document.querySelectorAll('.drawer__tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.tab = btn.dataset.tab;
+    document.querySelectorAll('.drawer__tab').forEach(b => b.classList.toggle('active', b === btn));
+    renderTab();
+  });
+});
+
+function renderTab() {
+  const content = $('#drawer-content');
+  if (state.tab === 'toc') renderTOC(content);
+  else if (state.tab === 'search') renderSearch(content);
+  else if (state.tab === 'bookmarks') renderBookmarks(content);
+}
+
+function renderTOC(content) {
+  content.innerHTML = '';
+  D.toc.forEach(section => {
+    const expanded = state.expandedSections.includes(section.id);
+    const wrap = document.createElement('div');
+    wrap.className = 'toc-section' + (expanded ? ' expanded' : '');
+    
+    const head = document.createElement('button');
+    head.className = 'toc-section__head';
+    head.innerHTML = `
+      <div class="toc-section__num">${section.title.toUpperCase().replace('SECTION ', 'SEC ')}</div>
+      <div class="toc-section__meta">
+        <div class="toc-section__title">${escapeHtml(section.subtitle)}</div>
+        <div class="toc-section__pages">Pages ${section.start}–${section.end} · ${section.kind === 'mechanics' ? 'Diagrams' : 'Reference'}</div>
+      </div>
+      ${section.children.length ? '<svg class="toc-section__caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' : ''}
+    `;
+    head.addEventListener('click', () => {
+      if (section.children.length) {
+        const idx = state.expandedSections.indexOf(section.id);
+        if (idx >= 0) state.expandedSections.splice(idx, 1);
+        else state.expandedSections.push(section.id);
+        save();
+        renderTab();
+      } else {
+        setPage(section.start);
+        closeDrawer();
+      }
+    });
+    wrap.appendChild(head);
+    
+    if (section.children.length) {
+      const kids = document.createElement('div');
+      kids.className = 'toc-section__children';
+      section.children.forEach(child => {
+        const btn = document.createElement('button');
+        btn.className = 'toc-child';
+        btn.innerHTML = `${escapeHtml(prettyTitle(child.title))}<span class="toc-child__page">p.${child.page}</span>`;
+        btn.addEventListener('click', () => {
+          setPage(child.page);
+          closeDrawer();
+        });
+        kids.appendChild(btn);
+      });
+      const goto = document.createElement('button');
+      goto.className = 'toc-child';
+      goto.style.fontStyle = 'italic';
+      goto.style.color = 'var(--accent)';
+      goto.innerHTML = `Open section<span class="toc-child__page">p.${section.start}</span>`;
+      goto.addEventListener('click', () => {
+        setPage(section.start);
+        closeDrawer();
+      });
+      kids.insertBefore(goto, kids.firstChild);
+      wrap.appendChild(kids);
+    }
+    content.appendChild(wrap);
+  });
+  
+  // Offline status footer
+  const offline = document.createElement('div');
+  offline.className = 'drawer-offline-status';
+  const isCached = localStorage.getItem('um.offline') === 'done';
+  if (isCached) {
+    offline.innerHTML = `
+      <div class="drawer-offline-status__row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Saved for offline use</span>
+      </div>
+      <button class="drawer-offline-status__btn" id="btn-recache">Re-download</button>
+    `;
+  } else {
+    offline.innerHTML = `
+      <div class="drawer-offline-status__row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.58 9"/><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+        <span>Not yet saved offline</span>
+      </div>
+      <button class="drawer-offline-status__btn drawer-offline-status__btn--primary" id="btn-recache">Download for offline</button>
+    `;
+  }
+  content.appendChild(offline);
+  
+  const recacheBtn = $('#btn-recache');
+  if (recacheBtn) {
+    recacheBtn.addEventListener('click', () => {
+      closeDrawer();
+      banner.classList.add('show');
+      // Auto-start the download since they explicitly asked
+      setTimeout(downloadAllPages, 400);
+    });
+  }
+}
+
+function renderSearch(content) {
+  content.innerHTML = `
+    <div class="search-box">
+      <input type="search" class="search-input" id="search-input" placeholder="Search the manual…" autocomplete="off" autocorrect="off" autocapitalize="off">
+      <div class="search-meta" id="search-meta">Type to search ${D.totalPages} pages</div>
+    </div>
+    <div class="search-results" id="search-results"></div>
+  `;
+  const input = $('#search-input');
+  const results = $('#search-results');
+  const meta = $('#search-meta');
+  let timer;
+  
+  // Restore last query
+  const lastQ = sessionStorage.getItem('um.lastQuery') || '';
+  if (lastQ) {
+    input.value = lastQ;
+    runSearch(lastQ);
+  }
+  
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => runSearch(input.value), 150);
+  });
+  setTimeout(() => input.focus(), 100);
+  
+  function runSearch(q) {
+    sessionStorage.setItem('um.lastQuery', q);
+    q = q.trim();
+    if (q.length < 2) {
+      results.innerHTML = '';
+      meta.textContent = `Type to search ${D.totalPages} pages`;
+      return;
+    }
+    const qLower = q.toLowerCase();
+    const terms = qLower.split(/\s+/).filter(Boolean);
+    const matches = [];
+    for (const p of D.index) {
+      const lower = p.t.toLowerCase();
+      let score = 0;
+      let firstIdx = Infinity;
+      for (const term of terms) {
+        const idx = lower.indexOf(term);
+        if (idx === -1) { score = -1; break; }
+        score++;
+        firstIdx = Math.min(firstIdx, idx);
+      }
+      if (score > 0) {
+        matches.push({ page: p.n, text: p.t, score, firstIdx });
+      }
+    }
+    matches.sort((a, b) => b.score - a.score || a.page - b.page);
+    
+    if (matches.length === 0) {
+      results.innerHTML = `<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>No results for "${escapeHtml(q)}"</div>`;
+      meta.textContent = '0 results';
+      return;
+    }
+    meta.textContent = `${matches.length} result${matches.length === 1 ? '' : 's'}`;
+    
+    results.innerHTML = '';
+    matches.slice(0, 80).forEach(m => {
+      const section = D.toc.find(s => m.page >= s.start && m.page <= s.end);
+      const snippet = makeSnippet(m.text, terms, m.firstIdx);
+      const btn = document.createElement('button');
+      btn.className = 'search-result';
+      btn.innerHTML = `
+        <div class="search-result__top">
+          <span class="search-result__section">${escapeHtml(section?.title || '')}</span>
+          <span class="search-result__page">p.${m.page}</span>
+        </div>
+        <div class="search-result__snippet">${snippet}</div>
+      `;
+      btn.addEventListener('click', () => {
+        setPage(m.page);
+        closeDrawer();
+      });
+      results.appendChild(btn);
+    });
+  }
+}
+
+function makeSnippet(text, terms, idx) {
+  const start = Math.max(0, idx - 40);
+  const end = Math.min(text.length, idx + 120);
+  let snip = text.slice(start, end);
+  if (start > 0) snip = '…' + snip;
+  if (end < text.length) snip = snip + '…';
+  // Highlight all terms
+  let safe = escapeHtml(snip);
+  for (const term of terms) {
+    const re = new RegExp(`(${escapeRegex(term)})`, 'gi');
+    safe = safe.replace(re, '<mark>$1</mark>');
+  }
+  return safe;
+}
+
+function renderBookmarks(content) {
+  if (state.bookmarks.length === 0) {
+    content.innerHTML = `
+      <div class="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        No bookmarks yet.<br>
+        <span style="font-size:12px;opacity:0.7;">Tap the bookmark icon on any page to save it here.</span>
+      </div>
+    `;
+    return;
+  }
+  content.innerHTML = '<div class="search-results"></div>';
+  const list = content.querySelector('.search-results');
+  state.bookmarks.forEach(p => {
+    const section = D.toc.find(s => p >= s.start && p <= s.end);
+    const pdata = D.index[p - 1];
+    const preview = pdata ? pdata.t.slice(0, 120) : '';
+    const btn = document.createElement('button');
+    btn.className = 'search-result';
+    btn.innerHTML = `
+      <div class="search-result__top">
+        <span class="search-result__section">${escapeHtml(section?.title || '')}</span>
+        <span class="search-result__page">p.${p}</span>
+      </div>
+      <div class="search-result__snippet">${escapeHtml(preview)}${preview.length === 120 ? '…' : ''}</div>
+    `;
+    btn.addEventListener('click', () => {
+      setPage(p);
+      closeDrawer();
+    });
+    list.appendChild(btn);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+// Convert ALL CAPS mechanics titles to a more readable Title Case,
+// while preserving short uppercase tokens that are clearly abbreviations.
+const KEEP_UPPER = new Set([
+  'ISP','AOR','BU','PU','U1','U2','U3','PA','NRO','LF','CF','RF',
+  'R1','R2','R3','R1+R3','RSP','RH','LH','LL','MLB','NCAA','OBR','FED'
+]);
+const LOWER_WORDS = new Set([
+  'a','an','and','as','at','but','by','for','if','in','of','on','or',
+  'the','to','vs','with','from','into','out','over','under','near'
+]);
+function prettyTitle(s) {
+  if (!s) return s;
+  const letters = s.replace(/[^A-Za-z]/g, '');
+  if (!letters) return s;
+  const upperRatio = (letters.replace(/[^A-Z]/g, '').length) / letters.length;
+  if (upperRatio < 0.6) return s;
+  let firstWord = true;
+  return s.replace(/(\b[\w'’+]+\b)([^\w'’+]*)/g, (m, word, tail) => {
+    const bare = word.replace(/[^A-Za-z0-9+]/g, '');
+    if (KEEP_UPPER.has(bare)) {
+      firstWord = false;
+      return bare + tail;
+    }
+    let out;
+    if (/^[A-Z]+$/.test(word)) {
+      const lower = word.toLowerCase();
+      if (!firstWord && LOWER_WORDS.has(lower)) {
+        out = lower;
+      } else {
+        out = word.charAt(0) + word.slice(1).toLowerCase();
+      }
+    } else {
+      out = word;
+    }
+    firstWord = false;
+    // Reset firstWord if tail contains a sentence boundary
+    if (/[.!?:—\-–]/.test(tail)) firstWord = true;
+    return out + tail;
+  });
+}
+
+// === Toast ===
+let toastTimer;
+function showToast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// === Init ===
+applyTheme();
+applyScale();
+renderWindow();
+updateUI();
+renderTab();
+
+// === Offline download ===
+// Show the "save for offline" banner if user hasn't acted on it yet
+const offlineState = localStorage.getItem('um.offline'); // 'done', 'later', or null
+const banner = $('#offline-banner');
+
+function showOfflineBanner() {
+  if (offlineState === 'done') return;
+  // Wait a beat so it doesn't compete with the splash
+  setTimeout(() => banner.classList.add('show'), 1400);
+}
+function hideOfflineBanner() {
+  banner.classList.remove('show');
+}
+
+$('#btn-offline-later').addEventListener('click', () => {
+  localStorage.setItem('um.offline', 'later');
+  hideOfflineBanner();
+  showToast('You can save for offline later from the menu');
+});
+
+async function downloadAllPages() {
+  banner.classList.add('downloading');
+  const fill = $('#progress-fill');
+  const text = $('#progress-text');
+  const total = D.totalPages;
+  let done = 0;
+  let failed = 0;
+  
+  // Download with limited concurrency so we don't hammer the network
+  const CONCURRENCY = 6;
+  const queue = [];
+  for (let i = 1; i <= total; i++) {
+    queue.push(`pages/p-${String(i).padStart(3, '0')}.jpg`);
+  }
+  
+  async function worker() {
+    while (queue.length > 0) {
+      const url = queue.shift();
+      try {
+        // Just fetching with default cache options is enough — the service worker
+        // intercepts and stores it in the cache automatically
+        const resp = await fetch(url, { cache: 'reload' });
+        if (!resp.ok) failed++;
+      } catch (e) {
+        failed++;
+      }
+      done++;
+      const pct = Math.round((done / total) * 100);
+      fill.style.width = `${pct}%`;
+      text.textContent = `Downloading ${done} of ${total}…`;
+    }
+  }
+  
+  // Spin up workers
+  const workers = [];
+  for (let i = 0; i < CONCURRENCY; i++) workers.push(worker());
+  await Promise.all(workers);
+  
+  if (failed === 0) {
+    localStorage.setItem('um.offline', 'done');
+    text.textContent = 'All set — manual is now saved on your device.';
+    fill.style.width = '100%';
+    setTimeout(() => {
+      hideOfflineBanner();
+      setTimeout(() => banner.classList.remove('downloading'), 400);
+      showToast('Manual saved for offline use');
+    }, 1600);
+  } else {
+    text.textContent = `Done with ${failed} retries needed. You can re-run this later.`;
+    setTimeout(() => {
+      hideOfflineBanner();
+      banner.classList.remove('downloading');
+    }, 3000);
+  }
+}
+
+$('#btn-offline-download').addEventListener('click', downloadAllPages);
+
+// Splash hide
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    $('#splash').classList.add('hidden');
+    setTimeout(() => { $('#splash').style.display = 'none'; }, 400);
+  }, 350);
+});
+
+// Service worker for offline
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(() => {
+      // Only prompt offline-save when service worker is actually registered
+      showOfflineBanner();
+    }).catch(() => {});
+  });
+}
+
+// Prevent iOS overscroll bouncing on body
+document.body.addEventListener('touchmove', (e) => {
+  if (e.target.closest('.drawer__content') || e.target.closest('.page-card__img-wrap')) return;
+  e.preventDefault();
+}, { passive: false });
+
+})();
+</script>
+</body>
+</html>
