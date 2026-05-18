@@ -1,6 +1,6 @@
 // Umpire Manual — service worker
 // Strategy: cache-first for all assets. Manual is static so this is safe.
-const CACHE = 'umpire-manual-2026-v5';
+const CACHE = 'umpire-manual-2026-v6';
 const SHELL = [
   './',
   './index.html',
