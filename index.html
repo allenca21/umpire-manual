@@ -28,8 +28,11 @@
   --shadow: 0 4px 24px rgba(11, 37, 69, 0.08);
   --shadow-lg: 0 12px 48px rgba(11, 37, 69, 0.16);
   --header-h: 56px;
-  --page-zoom: 1.15; /* default page zoom — makes words bigger on first open */
-  --ui-scale: 1; /* user-adjustable: 1, 1.15, 1.3 */
+  /* Image crop: clip the PDF's empty margins so content fills the screen.
+     Pages are 765px wide; content is at x=57..703 = 647px (about 85%).
+     Default crop trims to ~92% horizontal (leaves a little breathing room). */
+  --crop-trim: 0.92; /* fraction of width kept; smaller = tighter crop = bigger text */
+  --ui-scale: 1.05;  /* user-adjustable UI text scale */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
@@ -150,26 +153,35 @@ button { background: none; border: none; cursor: pointer; }
   box-shadow: var(--shadow);
   overflow: hidden;
   position: relative;
-  touch-action: pinch-zoom;
+  touch-action: pan-y pinch-zoom; /* allow vertical pan + pinch; let JS handle horizontal */
 }
 .page-card__img-wrap {
   width: 100%;
   height: 100%;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden; /* CRITICAL: no horizontal scrolling */
   display: flex;
   align-items: flex-start;
   justify-content: center;
+  position: relative;
+}
+.page-card__img-crop {
+  /* This div holds the image and clips the PDF margins.
+     The image is scaled up by 1/crop-trim so the content area fills the visible width.
+     E.g. crop-trim=0.92 → image is 1.087× wider, then shifted left by half the overflow. */
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  position: relative;
 }
 .page-card__img {
-  width: calc(100% * var(--page-zoom));
+  width: calc(100% / var(--crop-trim));
   height: auto;
   display: block;
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
   pointer-events: none;
-  margin: 0 auto;
+  margin-left: calc((100% - (100% / var(--crop-trim))) / 2); /* center the cropped content */
 }
 .page-card__placeholder {
   display: flex;
@@ -691,6 +703,60 @@ button { background: none; border: none; cursor: pointer; }
   .page-card { padding: 24px 24px calc(80px + var(--safe-bottom)) 24px; }
   .page-card__inner { max-width: 800px; margin: 0 auto; }
 }
+
+/* === Landscape on phones ===
+   In landscape, the screen is short and wide. Compact the header and footer,
+   ensure header buttons stay clear of the notch, and let the page fit by height. */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root { --header-h: 44px; }
+  .header__btn { width: 44px; height: 44px; }
+  .header__title { font-size: calc(14px * var(--ui-scale)); }
+  .header__title small { font-size: calc(10px * var(--ui-scale)); margin-top: 1px; }
+  .nav-btn { width: 40px; height: 40px; }
+  .nav-btn svg { width: 20px; height: 20px; }
+  .page-jump {
+    padding: 6px 12px;
+    min-height: 34px;
+    font-size: calc(13px * var(--ui-scale));
+  }
+  .footer {
+    padding: 6px calc(12px + var(--safe-right)) calc(6px + var(--safe-bottom)) calc(12px + var(--safe-left));
+    background: none;
+  }
+  .page-card {
+    padding: 6px max(8px, var(--safe-left)) calc(54px + var(--safe-bottom)) max(8px, var(--safe-right));
+  }
+  .page-card__img {
+    width: auto;
+    max-width: none;
+    height: 100%;
+    margin: 0 auto;
+  }
+  .page-card__img-crop {
+    width: auto;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .page-card__img-wrap {
+    align-items: center;
+  }
+  /* Compact offline banner in landscape — make it a smaller pill instead of full card */
+  .offline-banner {
+    bottom: calc(56px + var(--safe-bottom));
+    max-width: 420px;
+    left: auto;
+    right: 12px;
+    padding: 10px 12px;
+  }
+  .offline-banner__head { margin-bottom: 8px; gap: 8px; }
+  .offline-banner__icon { width: 28px; height: 28px; }
+  .offline-banner__icon svg { width: 16px; height: 16px; }
+  .offline-banner__title { font-size: calc(13px * var(--ui-scale)); }
+  .offline-banner__sub { display: none; } /* hide sub-text in landscape to save space */
+  .offline-banner__btn { padding: 7px 12px; font-size: calc(13px * var(--ui-scale)); }
+}
 </style>
 </head>
 <body>
@@ -820,12 +886,14 @@ const D = window.MANUAL_DATA;
 const $ = (s) => document.querySelector(s);
 
 // === State ===
-// 4 size presets: Normal/Large/X-Large/XX-Large. Page zoom and UI scale move together.
+// 3 size presets. Instead of zooming the image (which forces horizontal scrolling
+// in portrait), we CROP the PDF margins so content fills the screen width.
+// crop = fraction of horizontal width to KEEP (smaller = tighter crop = bigger text).
+// ui  = scaling factor for UI text (TOC, search, footer controls).
 const SIZE_STEPS = [
-  { ui: 1.0,  zoom: 1.0,  label: 'Normal'   },
-  { ui: 1.15, zoom: 1.2,  label: 'Large'    },
-  { ui: 1.3,  zoom: 1.5,  label: 'X-Large'  },
-  { ui: 1.45, zoom: 1.85, label: 'XX-Large' },
+  { ui: 0.95, crop: 1.00, label: 'Small'  },  // full page including margins
+  { ui: 1.05, crop: 0.92, label: 'Medium' },  // trim default margins (default)
+  { ui: 1.20, crop: 0.84, label: 'Large'  },  // tight crop, maximum legibility
 ];
 const state = {
   page: parseInt(localStorage.getItem('um.page')) || 1,
@@ -861,7 +929,7 @@ function applyTheme() {
 function applyScale() {
   const s = SIZE_STEPS[state.sizeIdx];
   document.documentElement.style.setProperty('--ui-scale', s.ui);
-  document.documentElement.style.setProperty('--page-zoom', s.zoom);
+  document.documentElement.style.setProperty('--crop-trim', s.crop);
 }
 
 // Find the nearest navigable page (skips blank pages)
@@ -903,13 +971,16 @@ function renderWindow() {
     inner.className = 'page-card__inner';
     const wrap = document.createElement('div');
     wrap.className = 'page-card__img-wrap';
+    const crop = document.createElement('div');
+    crop.className = 'page-card__img-crop';
     const img = document.createElement('img');
     img.className = 'page-card__img';
     img.src = `pages/p-${String(i).padStart(3, '0')}.jpg`;
     img.alt = `Page ${i}`;
     img.loading = 'lazy';
     img.draggable = false;
-    wrap.appendChild(img);
+    crop.appendChild(img);
+    wrap.appendChild(crop);
     inner.appendChild(wrap);
     card.appendChild(inner);
     track.appendChild(card);
@@ -979,9 +1050,6 @@ const viewer = $('#viewer');
 
 viewer.addEventListener('touchstart', (e) => {
   if (e.touches.length !== 1) return;
-  // When zoomed in (>1), let the page image scroll horizontally instead of swiping
-  const zoom = SIZE_STEPS[state.sizeIdx].zoom;
-  if (zoom > 1.01) { touch = null; return; }
   touch = {
     startX: e.touches[0].clientX,
     startY: e.touches[0].clientY,
@@ -995,8 +1063,10 @@ viewer.addEventListener('touchmove', (e) => {
   if (!touch || e.touches.length !== 1) return;
   touch.dx = e.touches[0].clientX - touch.startX;
   touch.dy = e.touches[0].clientY - touch.startY;
-  if (touch.locked === null && (Math.abs(touch.dx) > 8 || Math.abs(touch.dy) > 8)) {
-    touch.locked = Math.abs(touch.dx) > Math.abs(touch.dy) ? 'h' : 'v';
+  // Lock direction after a small movement; horizontal threshold is lower
+  // to prefer page swipes (the page has no vertical content to scroll anyway).
+  if (touch.locked === null && (Math.abs(touch.dx) > 6 || Math.abs(touch.dy) > 12)) {
+    touch.locked = Math.abs(touch.dx) * 1.4 > Math.abs(touch.dy) ? 'h' : 'v';
     if (touch.locked === 'h') track.classList.add('dragging');
   }
   if (touch.locked === 'h') {
