@@ -92,6 +92,13 @@ button { background: none; border: none; cursor: pointer; }
   color: #fff;
   border-radius: 8px;
   flex-shrink: 0;
+  position: relative;
+}
+.header__btn::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
 }
 .header__btn:active { background: rgba(255,255,255,0.1); }
 .header__btn svg { width: 22px; height: 22px; }
@@ -146,53 +153,28 @@ button { background: none; border: none; cursor: pointer; }
   overflow: hidden;
 }
 .page-card__inner {
+  /* Fill available vertical space — the page card extends to the buttons so
+     there's no awkward cream gap between content and footer. The page image
+     sits at its natural width-fit size at the top; the remaining card space
+     stays white, visually like a real page with whitespace at the bottom. */
   width: 100%;
   height: 100%;
-  position: relative;
-  touch-action: pan-y pinch-zoom;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-.page-card__img-wrap {
-  /* The "page frame" — sized by JS via inline styles to hug the cropped content.
-     Default CSS just provides the visual treatment. */
   background: var(--bg-page);
   border-radius: 12px;
   box-shadow: var(--shadow);
   overflow: hidden;
   position: relative;
-}
-.page-card__img-crop {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-}
-.page-card__img {
-  width: calc(100% / var(--crop-trim));
-  height: auto;
-  display: block;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
-  pointer-events: none;
-  margin-left: calc((100% - (100% / var(--crop-trim))) / 2);
+  touch-action: pan-y pinch-zoom;
 }
 .page-card__img-wrap {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  display: block;
-  position: relative;
-}
-.page-card__img-crop {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
   position: relative;
 }
 .page-card__img {
+  /* Image scaled wider than the wrap so the PDF's empty horizontal margins
+     fall outside (clipped by overflow: hidden on the wrap). */
   width: calc(100% / var(--crop-trim));
   height: auto;
   display: block;
@@ -230,15 +212,23 @@ button { background: none; border: none; cursor: pointer; }
   padding: 12px 16px calc(12px + var(--safe-bottom)) 16px;
   padding-left: calc(16px + var(--safe-left));
   padding-right: calc(16px + var(--safe-right));
-  background: linear-gradient(to top, var(--bg) 60%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   z-index: 50;
+  /* Footer itself captures pointer events — taps near the buttons won't fall
+     through to the page underneath. The gradient is a pseudo-element so it
+     doesn't need its own pointer-events. */
+}
+.footer::before {
+  content: '';
+  position: absolute;
+  inset: -40px 0 0 0; /* extend the gradient up beyond the footer */
+  background: linear-gradient(to top, var(--bg) 50%, transparent);
+  z-index: -1;
   pointer-events: none;
 }
-.footer > * { pointer-events: auto; }
 .page-jump {
   background: var(--bg-elev);
   border: 1px solid var(--rule-strong);
@@ -273,6 +263,16 @@ button { background: none; border: none; cursor: pointer; }
   justify-content: center;
   box-shadow: var(--shadow);
   color: var(--ink);
+  position: relative;
+}
+.nav-btn::before {
+  /* Extend the tap target by 6px on all sides without changing the visual size.
+     This adds ~10px to each touch dimension, making the button feel much more
+     responsive especially in landscape where things are tighter. */
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
 }
 .nav-btn:active { transform: scale(0.94); }
 .nav-btn:disabled { opacity: 0.3; }
@@ -725,45 +725,56 @@ button { background: none; border: none; cursor: pointer; }
 
 /* === Landscape on phones ===
    In landscape, the screen is short and wide. Compact the header and footer,
-   ensure header buttons stay clear of the notch, and let the page fit by height. */
+   ensure header buttons stay clear of the notch. Pages are fit-to-width and
+   vertically scrollable — bigger text, scroll down to see more. */
 @media (orientation: landscape) and (max-height: 500px) {
-  :root { --header-h: 44px; }
-  .header__btn { width: 44px; height: 44px; }
+  :root { --header-h: 48px; }
+  .header__btn { width: 48px; height: 48px; }
   .header__title { font-size: calc(14px * var(--ui-scale)); }
   .header__title small { font-size: calc(10px * var(--ui-scale)); margin-top: 1px; }
-  .nav-btn { width: 40px; height: 40px; }
-  .nav-btn svg { width: 20px; height: 20px; }
+  .nav-btn { width: 44px; height: 44px; }
+  .nav-btn svg { width: 22px; height: 22px; }
   .page-jump {
-    padding: 6px 12px;
-    min-height: 34px;
+    padding: 8px 14px;
+    min-height: 38px;
     font-size: calc(13px * var(--ui-scale));
   }
   .footer {
-    padding: 6px calc(12px + var(--safe-right)) calc(6px + var(--safe-bottom)) calc(12px + var(--safe-left));
-    background: none;
+    padding: 8px calc(12px + var(--safe-right)) calc(8px + var(--safe-bottom)) calc(12px + var(--safe-left));
+    background: var(--bg);
+    gap: 12px;
   }
+  .footer::before { display: none; }
   .page-card {
-    padding: 6px max(8px, var(--safe-left)) calc(54px + var(--safe-bottom)) max(8px, var(--safe-right));
+    padding: 6px max(8px, var(--safe-left)) calc(60px + var(--safe-bottom)) max(8px, var(--safe-right));
   }
-  .page-card__img {
-    width: auto;
-    max-width: none;
+  /* In landscape, fit page to WIDTH (not height) so text is big and readable.
+     The page card scrolls vertically when content exceeds the available height. */
+  .page-card__inner {
+    width: 100%;
     height: 100%;
+    max-width: 900px;     /* don't go absurdly wide on tablets */
     margin: 0 auto;
-  }
-  .page-card__img-crop {
-    width: auto;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow-y: auto;     /* allow vertical scroll within the page */
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    aspect-ratio: auto;   /* override the portrait aspect-ratio */
   }
   .page-card__img-wrap {
-    align-items: center;
+    width: 100%;
+    height: auto;         /* natural image height */
+    overflow: hidden;
+    display: block;
   }
-  /* Compact offline banner in landscape — make it a smaller pill instead of full card */
+  .page-card__img {
+    width: calc(100% / var(--crop-trim));
+    height: auto;
+    max-width: none;
+    margin-left: calc((100% - (100% / var(--crop-trim))) / 2);
+  }
+  /* Compact offline banner in landscape */
   .offline-banner {
-    bottom: calc(56px + var(--safe-bottom));
+    bottom: calc(64px + var(--safe-bottom));
     max-width: 420px;
     left: auto;
     right: 12px;
@@ -773,7 +784,7 @@ button { background: none; border: none; cursor: pointer; }
   .offline-banner__icon { width: 28px; height: 28px; }
   .offline-banner__icon svg { width: 16px; height: 16px; }
   .offline-banner__title { font-size: calc(13px * var(--ui-scale)); }
-  .offline-banner__sub { display: none; } /* hide sub-text in landscape to save space */
+  .offline-banner__sub { display: none; }
   .offline-banner__btn { padding: 7px 12px; font-size: calc(13px * var(--ui-scale)); }
 }
 </style>
@@ -990,25 +1001,17 @@ function renderWindow() {
     inner.className = 'page-card__inner';
     const wrap = document.createElement('div');
     wrap.className = 'page-card__img-wrap';
-    // Per-page vertical crop trims wasted whitespace from the bottom.
-    const vCrop = (D.pageCrops && D.pageCrops[i]) || 1.0;
-    wrap.dataset.vCrop = vCrop;
-    const crop = document.createElement('div');
-    crop.className = 'page-card__img-crop';
     const img = document.createElement('img');
     img.className = 'page-card__img';
     img.src = `pages/p-${String(i).padStart(3, '0')}.jpg`;
     img.alt = `Page ${i}`;
     img.loading = 'lazy';
     img.draggable = false;
-    crop.appendChild(img);
-    wrap.appendChild(crop);
+    wrap.appendChild(img);
     inner.appendChild(wrap);
     card.appendChild(inner);
     track.appendChild(card);
   }
-  // After render, size each wrap to fit the available space at its aspect ratio.
-  requestAnimationFrame(() => sizePageWraps());
   renderedRange = { pages: visiblePages };
   
   // Position track so the current page is centered
@@ -1018,40 +1021,6 @@ function renderWindow() {
   void track.offsetWidth;
   track.style.transition = '';
 }
-
-// Compute the optimal size of each page wrap so it hugs the cropped content
-// at the largest size that fits the inner box. Called after render and on resize.
-function sizePageWraps() {
-  const cropTrim = parseFloat(getComputedStyle(document.documentElement)
-                              .getPropertyValue('--crop-trim')) || 0.92;
-  document.querySelectorAll('.page-card__img-wrap').forEach(wrap => {
-    const inner = wrap.parentElement;
-    if (!inner) return;
-    const availW = inner.clientWidth;
-    const availH = inner.clientHeight;
-    if (availW <= 0 || availH <= 0) return;
-    const vCrop = parseFloat(wrap.dataset.vCrop) || 1.0;
-    // Visible content aspect ratio = (765 * cropTrim) : (990 * vCrop)
-    const contentW = 765 * cropTrim;
-    const contentH = 990 * vCrop;
-    const aspect = contentW / contentH;
-    // Pick the size that fills available space at this aspect ratio
-    let w = availW;
-    let h = w / aspect;
-    if (h > availH) {
-      h = availH;
-      w = h * aspect;
-    }
-    wrap.style.width = `${w}px`;
-    wrap.style.height = `${h}px`;
-  });
-}
-
-// Re-size on orientation change / viewport resize
-window.addEventListener('resize', () => sizePageWraps());
-window.addEventListener('orientationchange', () => {
-  setTimeout(() => sizePageWraps(), 100);
-});
 
 function setPage(p, smooth = true) {
   // If p is blank, redirect to nearest navigable
@@ -1108,11 +1077,17 @@ const viewer = $('#viewer');
 
 viewer.addEventListener('touchstart', (e) => {
   if (e.touches.length !== 1) return;
+  // Ignore touches that originate on interactive UI (footer buttons, header, banner).
+  // This prevents tap-on-button-near-edge from being interpreted as a swipe.
+  if (e.target.closest('.footer, .header, .offline-banner, .drawer, .scrim')) {
+    touch = null;
+    return;
+  }
   touch = {
     startX: e.touches[0].clientX,
     startY: e.touches[0].clientY,
     dx: 0, dy: 0,
-    locked: null, // 'h', 'v', or null
+    locked: null,
     startTime: Date.now(),
   };
 }, { passive: true });
@@ -1121,8 +1096,9 @@ viewer.addEventListener('touchmove', (e) => {
   if (!touch || e.touches.length !== 1) return;
   touch.dx = e.touches[0].clientX - touch.startX;
   touch.dy = e.touches[0].clientY - touch.startY;
-  // Lock direction after a small movement; horizontal threshold is lower
-  // to prefer page swipes (the page has no vertical content to scroll anyway).
+  // Lock direction after a small movement. Horizontal locks faster (×1.4 bias)
+  // so page swipes feel snappy. Vertical movement passes through to native scroll
+  // (used in landscape to scroll within a page that's fit-to-width).
   if (touch.locked === null && (Math.abs(touch.dx) > 6 || Math.abs(touch.dy) > 12)) {
     touch.locked = Math.abs(touch.dx) * 1.4 > Math.abs(touch.dy) ? 'h' : 'v';
     if (touch.locked === 'h') track.classList.add('dragging');
@@ -1175,7 +1151,6 @@ $('#btn-theme').addEventListener('click', () => {
 $('#btn-size').addEventListener('click', () => {
   state.sizeIdx = (state.sizeIdx + 1) % SIZE_STEPS.length;
   applyScale();
-  sizePageWraps();
   save();
   showToast(`Text size: ${SIZE_STEPS[state.sizeIdx].label}`);
 });
@@ -1624,9 +1599,24 @@ window.addEventListener('load', () => {
 // Service worker for offline
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(() => {
+    navigator.serviceWorker.register('sw.js').then((reg) => {
       // Only prompt offline-save when service worker is actually registered
       showOfflineBanner();
+      
+      // Check for updates periodically and on focus
+      function checkForUpdates() {
+        reg.update().catch(() => {});
+      }
+      window.addEventListener('focus', checkForUpdates);
+      setInterval(checkForUpdates, 60 * 60 * 1000); // hourly
+      
+      // When a new service worker takes over, reload the page to get fresh code
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
     }).catch(() => {});
   });
 }
