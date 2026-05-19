@@ -92,16 +92,13 @@ button { background: none; border: none; cursor: pointer; }
   color: #fff;
   border-radius: 8px;
   flex-shrink: 0;
+  cursor: pointer;
+  touch-action: manipulation; /* eliminate 300ms click delay on iOS */
   position: relative;
-}
-.header__btn::before {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 12px;
+  z-index: 1; /* explicit stacking within the header */
 }
 .header__btn:active { background: rgba(255,255,255,0.1); }
-.header__btn svg { width: 22px; height: 22px; }
+.header__btn svg { width: 22px; height: 22px; pointer-events: none; }
 .header__title {
   flex: 1;
   text-align: center;
@@ -263,20 +260,14 @@ button { background: none; border: none; cursor: pointer; }
   justify-content: center;
   box-shadow: var(--shadow);
   color: var(--ink);
+  cursor: pointer;
+  touch-action: manipulation;
   position: relative;
-}
-.nav-btn::before {
-  /* Extend the tap target by 6px on all sides without changing the visual size.
-     This adds ~10px to each touch dimension, making the button feel much more
-     responsive especially in landscape where things are tighter. */
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border-radius: 50%;
+  z-index: 1;
 }
 .nav-btn:active { transform: scale(0.94); }
 .nav-btn:disabled { opacity: 0.3; }
-.nav-btn svg { width: 22px; height: 22px; }
+.nav-btn svg { width: 22px; height: 22px; pointer-events: none; }
 
 /* ===== Drawer ===== */
 .scrim {
