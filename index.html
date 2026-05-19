@@ -716,11 +716,19 @@ button { background: none; border: none; cursor: pointer; }
 
 /* === Landscape on phones ===
    In landscape, the screen is short and wide. Compact the header and footer,
-   ensure header buttons stay clear of the notch. Pages are fit-to-width and
-   vertically scrollable — bigger text, scroll down to see more. */
+   ensure header buttons stay clear of the notch / Dynamic Island. Pages are
+   fit-to-width and vertically scrollable. */
 @media (orientation: landscape) and (max-height: 500px) {
-  :root { --header-h: 48px; }
-  .header__btn { width: 48px; height: 48px; }
+  /* Header is taller in landscape than iOS's reported safe-area, because the
+     Dynamic Island on modern iPhones occupies space in landscape but isn't
+     reported via env(safe-area-inset-top). Reserve 12px of internal top
+     padding so the buttons aren't behind the Island. */
+  :root { --header-h: 56px; }
+  .header {
+    padding-top: max(var(--safe-top), 12px);
+    height: calc(var(--header-h) + max(var(--safe-top), 12px));
+  }
+  .header__btn { width: 44px; height: 44px; }
   .header__title { font-size: calc(14px * var(--ui-scale)); }
   .header__title small { font-size: calc(10px * var(--ui-scale)); margin-top: 1px; }
   .nav-btn { width: 44px; height: 44px; }
@@ -738,6 +746,10 @@ button { background: none; border: none; cursor: pointer; }
   .footer::before { display: none; }
   .page-card {
     padding: 6px max(8px, var(--safe-left)) calc(60px + var(--safe-bottom)) max(8px, var(--safe-right));
+  }
+  /* The viewer's top must use the same max() calc so it doesn't slide under header */
+  .viewer {
+    top: calc(var(--header-h) + max(var(--safe-top), 12px));
   }
   /* In landscape, fit page to WIDTH (not height) so text is big and readable.
      The page card scrolls vertically when content exceeds the available height. */
